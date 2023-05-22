@@ -563,7 +563,6 @@ export class SearchFilter<T> extends React.Component<{
                 suggestionContext={filterSuggestionContext}
 
                 isPaidUser={accountStore!.isPaidUser}
-                getPro={accountStore!.getPro}
             />
             { hasContents
                 ? <FloatingClearFiltersButton

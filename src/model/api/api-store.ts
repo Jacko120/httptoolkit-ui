@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import { observable, observe, computed } from "mobx";
+import { observable, computed } from "mobx";
 import * as localForage from 'localforage';
 import * as serializr from 'serializr';
 import { findApi as findPublicOpenApi } from 'openapi-directory';
@@ -81,16 +81,6 @@ export class ApiStore {
     ) { }
 
     readonly initialized = lazyObservablePromise(async () => {
-        await this.accountStore.initialized;
-
-        // Every time the user account data is updated from the server, consider resetting
-        // paid settings to the free defaults. This ensures that they're reset on
-        // logout & subscription expiration (even if that happened while the app was
-        // closed), but don't get reset when the app starts with stale account data.
-        observe(this.accountStore, 'accountDataLastUpdated', () => {
-            if (!this.accountStore.isPaidUser) this.customOpenApiSpecs = {};
-        });
-
         await hydrate({
             // Stored in WebSQL, not local storage, for performance because specs can be *big*
             storage: localForage,

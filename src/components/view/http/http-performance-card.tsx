@@ -35,7 +35,6 @@ import {
     CollapsibleSectionBody
 } from '../../common/collapsible-section';
 import { ContentLabelBlock, Markdown } from '../../common/text-content';
-import { ProHeaderPill, CardSalesPitch } from '../../account/pro-placeholders';
 
 interface HttpPerformanceCardProps extends CollapsibleCardProps {
     exchange: HttpExchange;
@@ -67,31 +66,19 @@ export const HttpPerformanceCard = inject('accountStore')(observer((props: HttpP
 
     return <CollapsibleCard {...props}>
         <header>
-            { isPaidUser
-                ? ('startTime' in exchange.timingEvents
-                    ? <TimingPill timingEvents={exchange.timingEvents} />
-                    : null)
-                : <ProHeaderPill />
+            { ('startTime' in exchange.timingEvents
+                ? <TimingPill timingEvents={exchange.timingEvents} />
+                : null)
             }
             <CollapsibleCardHeading onCollapseToggled={props.onCollapseToggled}>
                 Performance
             </CollapsibleCardHeading>
         </header>
 
-        { isPaidUser ?
-            <div>
-                <CompressionPerformance exchange={exchange} />
-                <CachingPerformance exchange={exchange} />
-            </div>
-        :
-            <CardSalesPitch source='performance'>
-                <p>
-                    See timing info, dive into the real and potential compression of every
-                    exchange, and understand how &amp; where this response could
-                    be cached, for a full performance overview.
-                </p>
-            </CardSalesPitch>
-        }
+        <div>
+            <CompressionPerformance exchange={exchange} />
+            <CachingPerformance exchange={exchange} />
+        </div>
     </CollapsibleCard>;
 }));
 

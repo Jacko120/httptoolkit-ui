@@ -1,5 +1,4 @@
-import { initSentry, reportError } from '../errors';
-initSentry(process.env.SENTRY_DSN);
+import { reportError } from '../errors';
 
 import * as localForage from 'localforage';
 

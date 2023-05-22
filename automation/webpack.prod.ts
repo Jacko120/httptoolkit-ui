@@ -1,18 +1,10 @@
 import * as path from 'path';
 import merge from "webpack-merge";
-import SentryPlugin from '@sentry/webpack-plugin';
 
 import { InjectManifest } from 'workbox-webpack-plugin';
 import * as ssri from "ssri";
 
 import common from "./webpack.common";
-
-const shouldPublishSentryRelease =
-    process.env.SENTRY_AUTH_TOKEN && process.env.UI_VERSION;
-console.log(shouldPublishSentryRelease
-    ? "* Webpack will upload source map to Sentry *"
-    : "Sentry source map upload disabled - no token set"
-);
 
 export default merge(common, {
     mode: "production",
@@ -68,15 +60,6 @@ export default merge(common, {
                     return { manifest };
                 },
             ] as any
-        }),
-        ...(shouldPublishSentryRelease
-        ? [
-            new SentryPlugin({
-                release: process.env.UI_VERSION,
-                include: common!.output!.path!,
-                validate: true
-            })
-        ]
-        : [])
+        })
     ]
 });

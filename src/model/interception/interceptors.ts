@@ -65,8 +65,7 @@ const getChromiumOptions = ({ accountStore, serverVersion }: {
     accountStore: AccountStore,
     serverVersion?: string
 }) => ({
-    webExtensionEnabled: accountStore.featureFlags.includes('webrtc') ||
-        versionSatisfies(serverVersion || '', WEBRTC_GLOBALLY_ENABLED)
+    webExtensionEnabled: versionSatisfies(serverVersion || '', WEBRTC_GLOBALLY_ENABLED)
 });
 
 const INTERCEPT_OPTIONS: _.Dictionary<InterceptorConfig> = {
@@ -158,8 +157,7 @@ const INTERCEPT_OPTIONS: _.Dictionary<InterceptorConfig> = {
         iconProps: SourceIcons.Arc,
         tags: BROWSER_TAGS,
         getActivationOptions: getChromiumOptions,
-        checkRequirements: ({ accountStore }) =>
-            accountStore.featureFlags.includes('arc-browser')
+        checkRequirements: ({ accountStore }) => true
     },
     'fresh-safari': {
         name: 'Safari',

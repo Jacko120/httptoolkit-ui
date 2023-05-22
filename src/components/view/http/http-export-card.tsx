@@ -16,7 +16,6 @@ import { AccountStore } from '../../../model/account/account-store';
 import { UiStore } from '../../../model/ui-store';
 import { generateHarRequest, generateHar, ExtendedHarRequest } from '../../../model/http/har';
 
-import { ProHeaderPill, CardSalesPitch } from '../../account/pro-placeholders';
 import {
     CollapsibleCard,
     CollapsibleCardProps,
@@ -223,10 +222,7 @@ export class HttpExportCard extends React.Component<ExportCardProps> {
 
         return <CollapsibleCard {...this.props}>
             <header>
-                { isPaidUser
-                    ? <ExportHarPill exchange={exchange} />
-                    : <ProHeaderPill />
-                }
+                <ExportHarPill exchange={exchange} />
 
                 <PillSelector<SnippetOption>
                     onChange={this.setSnippetOption}
@@ -241,27 +237,12 @@ export class HttpExportCard extends React.Component<ExportCardProps> {
                 </CollapsibleCardHeading>
             </header>
 
-            { isPaidUser ?
-                <div>
-                    <ExportSnippetEditor
-                        exchange={exchange}
-                        exportOption={this.snippetOption}
-                    />
-                </div>
-            :
-                <CardSalesPitch source='export'>
-                    <p>
-                        Instantly export requests as code, for languages and tools including cURL, wget, JS
-                        (XHR, Node HTTP, Request, ...), Python (native or Requests), Ruby, Java (OkHttp
-                        or Unirest), Go, PHP, Swift, HTTPie, and a whole lot more.
-                    </p>
-                    <p>
-                        Want to save the exchange itself? Export one or all requests as HAR (the{' '}
-                        <a href="https://en.wikipedia.org/wiki/.har">HTTP Archive Format</a>), to import
-                        and examine elsewhere, share with your team, or store for future reference.
-                    </p>
-                </CardSalesPitch>
-            }
+            <div>
+                <ExportSnippetEditor
+                    exchange={exchange}
+                    exportOption={this.snippetOption}
+                />
+            </div>
         </CollapsibleCard>;
     }
 

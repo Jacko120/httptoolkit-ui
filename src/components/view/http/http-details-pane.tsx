@@ -143,7 +143,7 @@ export class HttpDetailsPane extends React.Component<{
 
     renderHeaderCard(exchange: HttpExchange): JSX.Element | null {
         const { accountStore, navigate } = this.props;
-        const { isPaidUser, getPro } = accountStore!;
+        const { isPaidUser } = accountStore!;
         const {
             requestBreakpoint,
             respondToBreakpointedRequest,
@@ -171,7 +171,6 @@ export class HttpDetailsPane extends React.Component<{
         const errorHeaderProps = {
             key: 'error-header',
             isPaidUser,
-            getPro,
             navigate,
             mockRequest: this.mockRequest,
             ignoreError: this.ignoreError

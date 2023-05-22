@@ -47,7 +47,7 @@ async function getLatestServerDetails() {
         : {}
 
     const response = await fetch(
-        'https://api.github.com/repos/httptoolkit/httptoolkit-server/releases/latest',
+        'https://api.github.com/repos/juby-httptoolkit/httptoolkit-server/releases/latest',
         { headers }
     );
     if (!response.ok) {

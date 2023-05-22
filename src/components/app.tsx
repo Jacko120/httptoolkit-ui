@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import * as React from 'react';
 import { computed } from 'mobx';
-import { observer, inject, disposeOnUnmount } from 'mobx-react';
+import { observer, inject } from 'mobx-react';
 import {
     Router,
     RouteComponentProps,
@@ -11,7 +11,6 @@ import {
 
 import { styled } from '../styles';
 import { WithInjected } from '../types';
-import { trackPage } from '../metrics';
 import { appHistory } from '../routing';
 import { useHotkeys, Ctrl } from '../util/ui';
 
@@ -23,9 +22,6 @@ import { InterceptPage } from './intercept/intercept-page';
 import { ViewPage } from './view/view-page';
 import { MockPage } from './mock/mock-page';
 import { SettingsPage } from './settings/settings-page';
-import { PlanPicker } from './account/plan-picker';
-import { ModalOverlay } from './account/modal-overlay';
-import { CheckoutSpinner } from './account/checkout-spinner';
 
 const AppContainer = styled.div<{ inert?: boolean }>`
     display: flex;
@@ -52,7 +48,6 @@ const Route = ({ children, ...props }: ExtendProps & RouteComponentProps): React
 
 const AppKeyboardShortcuts = (props: {
     navigate: (path: string) => void,
-    canVisitSettings: boolean
 }) => {
     useHotkeys('Ctrl+1,Cmd+1', (e) => {
         props.navigate('/intercept');
@@ -67,9 +62,9 @@ const AppKeyboardShortcuts = (props: {
         e.preventDefault();
     }, [props.navigate]);
     useHotkeys('Ctrl+9,Cmd+9', (e) => {
-        if (props.canVisitSettings) props.navigate('/settings');
+        props.navigate('/settings');
         e.preventDefault();
-    }, [props.navigate, props.canVisitSettings]);
+    }, [props.navigate]);
 
     return null;
 };
@@ -77,12 +72,6 @@ const AppKeyboardShortcuts = (props: {
 @inject('accountStore')
 @observer
 class App extends React.Component<{ accountStore: AccountStore }> {
-
-    @computed
-    get canVisitSettings() {
-        return this.props.accountStore.isPaidUser || this.props.accountStore.isPastDueUser;
-    }
-
     @computed
     get menuItems() {
         return [
@@ -121,24 +110,14 @@ class App extends React.Component<{ accountStore: AccountStore }> {
                 : []
             ),
 
-            (this.canVisitSettings
-                ? {
-                    name: 'Settings',
-                    title: `Reconfigure HTTP Toolkit and manage your account (${Ctrl}+9)`,
-                    icon: ['fas', 'cog'],
-                    position: 'bottom',
-                    type: 'router',
-                    url: '/settings'
-                }
-                : {
-                    name: 'Get Pro',
-                    title: "Sign up for HTTP Toolkit Pro",
-                    icon: ['far', 'star'],
-                    position: 'bottom',
-                    type: 'callback',
-                    onClick: () => this.props.accountStore.getPro('sidebar')
-                }
-            ),
+            {
+                name: 'Settings',
+                title: `Reconfigure HTTP Toolkit (${Ctrl}+9)`,
+                icon: ['fas', 'cog'],
+                position: 'bottom',
+                type: 'router',
+                url: '/settings'
+            },
 
             {
                 name: 'Give feedback',
@@ -152,36 +131,12 @@ class App extends React.Component<{ accountStore: AccountStore }> {
         ] as SidebarItem[];
     }
 
-    componentDidMount() {
-        disposeOnUnmount(this, appHistory.listen(
-            ({ location }) => trackPage(location)
-        ));
-    }
-
     render() {
-        const {
-            modal,
-            setSelectedPlan,
-            subscriptionPlans,
-            userEmail,
-            logIn,
-            logOut,
-            cancelCheckout
-        } = this.props.accountStore;
-
         return <LocationProvider history={appHistory}>
             <AppKeyboardShortcuts
                 navigate={appHistory.navigate}
-                canVisitSettings={this.canVisitSettings}
             />
-            <AppContainer
-                aria-hidden={!!modal}
-                inert={!!modal}
-                // 'inert' doesn't actually work - it's non-standard, so we need this:
-                ref={node => node && (!!modal ?
-                    node.setAttribute('inert', '') : node.removeAttribute('inert')
-                )}
-            >
+            <AppContainer>
                 <Sidebar items={this.menuItems} />
 
                 <Router>
@@ -194,24 +149,6 @@ class App extends React.Component<{ accountStore: AccountStore }> {
                     <Route path={'/settings'} pageComponent={SettingsPage} />
                 </Router>
             </AppContainer>
-
-            { !!modal && <ModalOverlay /> }
-
-            { modal === 'pick-a-plan' &&
-                <PlanPicker
-                    email={userEmail}
-                    onPlanPicked={setSelectedPlan}
-                    logOut={logOut}
-                    logIn={logIn}
-                    plans={subscriptionPlans}
-                />
-            }
-
-            { modal === 'post-checkout' &&
-                <CheckoutSpinner
-                    onCancel={cancelCheckout}
-                />
-            }
         </LocationProvider>;
     }
 }

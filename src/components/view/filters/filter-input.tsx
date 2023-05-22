@@ -125,7 +125,6 @@ export const FilterInput = <T extends unknown>(props: {
     suggestionContext?: T,
 
     isPaidUser: boolean,
-    getPro: (source: string) => void,
 
     onFiltersChanged: (filters: FilterSet) => void,
     onFiltersConsidered: (filters: FilterSet | undefined) => void,
@@ -186,11 +185,7 @@ export const FilterInput = <T extends unknown>(props: {
         if (isSaveFiltersSuggestion(data.suggestion)) {
             if (!props.value) return; // No dice - we just ignore empty names
 
-            if (props.isPaidUser) {
-                props.onFiltersSaved(props.activeFilters.slice(1), props.value);
-            } else {
-                props.getPro('save-filter');
-            }
+            props.onFiltersSaved(props.activeFilters.slice(1), props.value);
             return;
         }
 
@@ -204,7 +199,7 @@ export const FilterInput = <T extends unknown>(props: {
             });
         }
         props.onFiltersChanged(updatedFilters);
-    }, [updatedFilters, props.value, props.isPaidUser, props.getPro, props.activeFilters, props.onFiltersChanged]);
+    }, [updatedFilters, props.value, props.activeFilters, props.onFiltersChanged]);
 
     const clearSuggestions = React.useCallback(() => {
         const autosuggest = autosuggestRef.current as any;

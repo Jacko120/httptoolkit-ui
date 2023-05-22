@@ -3,7 +3,6 @@ import { observer } from 'mobx-react';
 import { observable, action } from 'mobx';
 
 import { styled } from '../styles';
-import { Sentry, isSentryInitialized } from '../errors';
 import { trackEvent } from '../metrics';
 
 const ErrorOverlay = styled((props: {
@@ -77,13 +76,6 @@ export class ErrorBoundary extends React.Component {
     componentDidCatch(error: Error, errorInfo: any) {
         this.error = error;
 
-        Sentry.withScope(scope => {
-            Object.keys(errorInfo).forEach(key => {
-                scope.setExtra(key, errorInfo[key]);
-            });
-            Sentry.captureException(error);
-        });
-
         trackEvent({
             category: 'Error',
             action: 'UI crashed'
@@ -100,22 +92,11 @@ export class ErrorBoundary extends React.Component {
                     Sorry, it's all gone wrong.
                 </p>
                 <div>
-                    { isSentryInitialized() &&
-                        <button disabled={this.feedbackSent} onClick={this.sendFeedback}>
-                            Tell us what happened
-                        </button>
-                    }
                     <button onClick={() => window.location.reload()}>
                         Reload HTTP Toolkit
                     </button>
                 </div>
             </ErrorOverlay>
         ) : this.props.children;
-    }
-
-    @action.bound
-    sendFeedback() {
-        Sentry.showReportDialog();
-        this.feedbackSent = true;
     }
 }

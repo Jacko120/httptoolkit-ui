@@ -233,30 +233,6 @@ export const GlobalStyles = createGlobalStyle`
         animation: fa-spin 5s infinite linear;
     }
 
-    /* Override Auth0's style choices to match the rest of the UI */
-    .auth0-lock {
-        font-family: ${p => p.theme.fontFamily} !important;
-
-        .auth0-lock-overlay {
-            display: none; /* We have our own overlay we'll use instead */
-        }
-
-        .auth0-lock-widget {
-            box-shadow: 0 2px 10px 0 rgba(0,0,0,0.2) !important;
-            overflow: visible !important;
-        }
-
-        .auth0-lock-form {
-            .auth0-lock-name {
-                font-size: ${fontSizes.headingSize} !important;
-            }
-
-            p, .auth0-lock-social-button-text {
-                font-size: ${fontSizes.textSize} !important;
-            }
-        }
-    }
-
     /* Override some Monaco CSS internals */
     .monaco-editor {
         /* Our editors don't have real filenames, so hide that from error popups: */

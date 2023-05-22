@@ -44,7 +44,6 @@ import {
 import { AccountStore } from '../../model/account/account-store';
 
 import { clickOnEnter, noPropagation } from '../component-utils';
-import { GetProOverlay } from '../account/pro-placeholders';
 import { LittleCard } from '../common/card';
 import {
     InitialMatcherRow,
@@ -315,8 +314,7 @@ export class RuleRow extends React.Component<{
             disabled
         } = this.props;
         const {
-            isPaidUser,
-            getPro
+            isPaidUser
         } = this.props.accountStore!;
 
         const ruleType = rule.type;
@@ -475,7 +473,6 @@ export class RuleRow extends React.Component<{
                                     handlerIndex={i}
 
                                     isPaidUser={isPaidUser}
-                                    getPro={getPro}
                                     ruleType={ruleType}
                                     availableHandlers={availableHandlers}
                                     updateHandler={this.updateHandler}
@@ -647,7 +644,6 @@ export class RuleRow extends React.Component<{
 @observer
 class HandlerStepSection extends React.Component<{
     isPaidUser: boolean;
-    getPro: (source: string) => void;
     ruleType: RuleType;
     handlerIndex: number;
     handler: Handler;
@@ -669,18 +665,12 @@ class HandlerStepSection extends React.Component<{
 
     render() {
         const {
-            isPaidUser,
-            getPro,
             ruleType,
             availableHandlers,
             handler
         } = this.props;
 
         const shownHandler = this.demoHandler ?? handler;
-
-        const isHandlerDemo = !isPaidUser &&
-            shownHandler &&
-            isPaidHandler(ruleType, shownHandler);
 
         return <>
             <HandlerSelector
@@ -690,22 +680,11 @@ class HandlerStepSection extends React.Component<{
                 availableHandlers={availableHandlers}
             />
 
-            { isHandlerDemo
-                // If you select a paid handler with an unpaid account,
-                // show a handler demo with a 'Get Pro' overlay:
-                ? <GetProOverlay getPro={getPro} source={`rule-${handler.type}`}>
-                    <HandlerConfiguration
-                        ruleType={ruleType}
-                        handler={shownHandler}
-                        onChange={_.noop}
-                    />
-                </GetProOverlay>
-                : <HandlerConfiguration
-                    ruleType={ruleType}
-                    handler={shownHandler}
-                    onChange={this.updateHandler}
-                />
-            }
+            <HandlerConfiguration
+                ruleType={ruleType}
+                handler={shownHandler}
+                onChange={this.updateHandler}
+            />
         </>;
     }
 

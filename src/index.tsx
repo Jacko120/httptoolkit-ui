@@ -7,8 +7,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const authToken = urlParams.get('authToken');
 localForage.setItem('latest-auth-token', authToken);
 
-import { initSentry, reportError } from './errors';
-initSentry(process.env.SENTRY_DSN);
+import { reportError } from './errors';
 
 import * as _ from 'lodash';
 import * as React from 'react';
@@ -18,7 +17,6 @@ import { Provider } from 'mobx-react';
 
 import { GlobalStyles } from './styles';
 import { delay } from './util/promise';
-import { initMetrics } from './metrics';
 import { appHistory } from './routing';
 
 import registerUpdateWorker, { ServiceWorkerNoSupportError } from 'service-worker-loader!./services/update-worker';
@@ -71,9 +69,7 @@ delay(5000).then(() => {
     throw e;
 });
 
-const accountStore = new AccountStore(
-    () => appHistory.navigate('/settings')
-);
+const accountStore = new AccountStore();
 const apiStore = new ApiStore(accountStore);
 const uiStore = new UiStore(accountStore);
 const proxyStore = new ProxyStore(accountStore);
@@ -112,7 +108,6 @@ const stores = {
 const appStartupPromise = Promise.all(
     Object.values(stores).map(store => store.initialized)
 );
-initMetrics();
 
 // Once the app is loaded, show the app
 appStartupPromise.then(() => {

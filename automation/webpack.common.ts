@@ -152,8 +152,6 @@ export default <Webpack.Configuration>{
             filename: 'fonts.css'
         }),
         new Webpack.EnvironmentPlugin({
-            'SENTRY_DSN': null,
-            'POSTHOG_KEY': null,
             'UI_VERSION': null,
             'ACCOUNTS_API': null,
         })
