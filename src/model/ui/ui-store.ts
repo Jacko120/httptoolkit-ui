@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import * as React from 'react';
-import { observable, action, autorun, computed, observe } from 'mobx';
+import { observable, action, autorun, computed } from 'mobx';
 
 import { Theme, ThemeName, Themes } from '../../styles';
 import { lazyObservablePromise } from '../../util/observable';
@@ -104,16 +104,6 @@ export class UiStore {
             // Persist the background colour standalone, so we can easily access it
             // from the index.html loading script, whether it's custom or computed
             localStorage.setItem('theme-background-color', this.theme.containerBackground);
-        });
-
-        // Every time the user account data is updated from the server, consider resetting
-        // paid settings to the free defaults. This ensures that they're reset on
-        // logout & subscription expiration (even if that happened while the app was
-        // closed), but don't get reset when the app starts with stale account data.
-        observe(this.accountStore, 'accountDataLastUpdated', () => {
-            if (!this.accountStore.isPaidUser) {
-                this.setTheme('light');
-            }
         });
 
         await hydrate({
