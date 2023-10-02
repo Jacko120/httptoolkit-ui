@@ -4,7 +4,9 @@ import {
     requestHandlers,
     MOCKTTP_PARAM_REF,
     ProxyConfig,
-    ProxySetting
+    ProxySetting,
+    RuleParameterReference,
+    ProxySettingSource
 } from 'mockttp';
 import * as MockRTC from 'mockrtc';
 
@@ -28,7 +30,7 @@ import {
 } from '../../types';
 import { lazyObservablePromise } from '../../util/observable';
 import { persist, hydrate } from '../../util/mobx-persist/persist';
-import { reportError } from '../../errors';
+import { logError } from '../../errors';
 
 import { AccountStore } from '../account/account-store';
 import { ProxyStore } from '../proxy-store';
@@ -173,7 +175,7 @@ export class RulesStore {
                         resolve();
                     } catch (e) {
                         console.log('Failed to activate stored rules', e, JSON.stringify(rules));
-                        reportError('Failed to activate configured ruleset');
+                        logError('Failed to activate configured ruleset');
                         alert(`Configured rules could not be activated, so were reset to default.`);
 
                         this.resetRulesToDefault(); // Should trigger the reaction above again, and thereby resolve().
@@ -206,7 +208,7 @@ export class RulesStore {
                 }
             });
         } catch (e) {
-            reportError(e);
+            logError(e);
         }
 
         // Load the actual rules from storage (separately, so deserialization can use settings loaded above)
@@ -224,10 +226,10 @@ export class RulesStore {
                 JSON.parse(localStorage.getItem('rules-store') ?? '{}')?.rules
             );
 
-            reportError(err);
-            alert(`Could not load rules from last run.\n\n${err}`);
-            // We then continue, which resets the rules exactly as if this was the user's first run.
-        });
+                logError(err);
+                alert(`Could not load rules from last run.\n\n${err}`);
+                // We then continue, which resets the rules exactly as if this was the user's first run.
+            });
 
         if (!this.rules) {
             // If rules are somehow undefined (not sure, but seems it can happen, maybe odd data?) reset them:
@@ -306,7 +308,7 @@ export class RulesStore {
             }
         } catch (e) {
             console.log("Could not parse proxy", proxyUrl);
-            reportError(e);
+            logError(e);
             return 'unparseable';
         }
     }
@@ -329,7 +331,12 @@ export class RulesStore {
     }
 
     @computed.struct
-    get proxyConfig(): ProxyConfig {
+    get proxyConfig():
+        | ProxySetting
+        | RuleParameterReference<ProxySettingSource>
+        | Array<ProxySetting | RuleParameterReference<ProxySettingSource>>
+        | undefined
+    {
         const { userProxyConfig } = this;
         const { httpProxyPort } = this.proxyStore;
 

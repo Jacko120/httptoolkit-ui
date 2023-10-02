@@ -15,13 +15,21 @@ import { appHistory } from '../routing';
 import { useHotkeys, Ctrl } from '../util/ui';
 
 import { AccountStore } from '../model/account/account-store';
-import { serverVersion, versionSatisfies, MOCK_SERVER_RANGE } from '../services/service-versions';
+import { UiStore } from '../model/ui/ui-store';
+import {
+    serverVersion,
+    versionSatisfies,
+    MOCK_SERVER_RANGE,
+    SERVER_SEND_API_SUPPORTED
+} from '../services/service-versions';
 
 import { Sidebar, SidebarItem, SIDEBAR_WIDTH } from './sidebar';
 import { InterceptPage } from './intercept/intercept-page';
 import { ViewPage } from './view/view-page';
 import { MockPage } from './mock/mock-page';
+import { SendPage } from './send/send-page';
 import { SettingsPage } from './settings/settings-page';
+import { HtmlContextMenu } from './html-context-menu';
 
 const AppContainer = styled.div<{ inert?: boolean }>`
     display: flex;
@@ -70,8 +78,28 @@ const AppKeyboardShortcuts = (props: {
 };
 
 @inject('accountStore')
+@inject('uiStore')
 @observer
-class App extends React.Component<{ accountStore: AccountStore }> {
+class App extends React.Component<{
+    accountStore: AccountStore,
+    uiStore: UiStore
+}> {
+
+    @computed
+    get canVisitSettings() {
+        return this.props.accountStore.isPaidUser || this.props.accountStore.isPastDueUser;
+    }
+
+    @computed
+    get canVisitSend() {
+        return (
+            // Hide Send option if the server is too old for proper support.
+            // We show by default to avoid flicker in the most common case
+            serverVersion.state !== 'fulfilled' ||
+            versionSatisfies(serverVersion.value as string, SERVER_SEND_API_SUPPORTED)
+        );
+    }
+
     @computed
     get menuItems() {
         return [
@@ -110,6 +138,18 @@ class App extends React.Component<{ accountStore: AccountStore }> {
                 : []
             ),
 
+            ...(this.canVisitSend
+                ? [{
+                    name: 'Send',
+                    title: `Send HTTP requests directly (${Ctrl}+4)`,
+                    icon: ['far', 'paper-plane'],
+                    position: 'top',
+                    type: 'router',
+                    url: '/send'
+                }]
+                : []
+            ),
+
             {
                 name: 'Settings',
                 title: `Reconfigure HTTP Toolkit (${Ctrl}+9)`,
@@ -132,6 +172,11 @@ class App extends React.Component<{ accountStore: AccountStore }> {
     }
 
     render() {
+        const {
+            contextMenuState,
+            clearHtmlContextMenu
+        } = this.props.uiStore;
+
         return <LocationProvider history={appHistory}>
             <AppKeyboardShortcuts
                 navigate={appHistory.navigate}
@@ -146,16 +191,25 @@ class App extends React.Component<{ accountStore: AccountStore }> {
                     <Route path={'/view/:eventId'} pageComponent={ViewPage} />
                     <Route path={'/mock'} pageComponent={MockPage} />
                     <Route path={'/mock/:initialRuleId'} pageComponent={MockPage} />
+                    <Route path={'/send'} pageComponent={SendPage} />
                     <Route path={'/settings'} pageComponent={SettingsPage} />
                 </Router>
             </AppContainer>
+
+            {
+                contextMenuState &&
+                    <HtmlContextMenu
+                        menuState={contextMenuState}
+                        onHidden={clearHtmlContextMenu}
+                    />
+            }
         </LocationProvider>;
     }
 }
 
 // Annoying cast required to handle the store prop nicely in our types
 const AppWithStoreInjected = (
-    App as unknown as WithInjected<typeof App, 'accountStore'>
+    App as unknown as WithInjected<typeof App, 'accountStore' | 'uiStore'>
 );
 
 export { AppWithStoreInjected as App };

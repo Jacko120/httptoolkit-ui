@@ -68,10 +68,6 @@ const RowContainer = styled(LittleCard)<{
     width: calc(100% - ${p => p.depth * 40}px);
     margin-left: ${p => p.depth * 40}px;
 
-    svg {
-        margin: 0 5px;
-    }
-
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;
@@ -136,6 +132,10 @@ export const AddRuleRow = styled((p: {
         Add a new rule to rewrite requests or responses
     </RowContainer>
 )`
+    > svg {
+        margin: 0 5px;
+    }
+
     margin-top: 20px;
 
     justify-content: center;

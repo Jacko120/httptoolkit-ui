@@ -5,12 +5,12 @@ import { observer, inject } from "mobx-react";
 import { WithInjected } from '../../types';
 import { styled, Theme, ThemeName } from '../../styles';
 
-import { UiStore } from '../../model/ui-store';
+import { UiStore } from '../../model/ui/ui-store';
 import { serverVersion, versionSatisfies, PORT_RANGE_SERVER_RANGE } from '../../services/service-versions';
 
 import { CollapsibleCard, CollapsibleCardHeading } from '../common/card';
 import { TabbedOptionsContainer, Tab, TabsContainer } from '../common/tabbed-options';
-import { BaseEditor } from '../editor/base-editor';
+import { ContainerSizedEditor } from '../editor/base-editor';
 
 import * as amIUsingHtml from '../../amiusing.html';
 
@@ -49,7 +49,7 @@ const ThemeColors = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
     border: 3px solid #999;
-    margin: 0 20px;
+    margin: auto 20px;
 `;
 
 const ThemeColorBlock = styled.div<{ themeColor: keyof Theme }>`
@@ -62,6 +62,7 @@ const EditorContainer = styled.div`
     border: 3px solid #999;
     height: 300px;
     flex-grow: 1;
+    margin: auto 0;
 `;
 
 @inject('uiStore')
@@ -96,15 +97,21 @@ class SettingsPage extends React.Component<SettingsPageProps> {
                         </header>
                         <TabbedOptionsContainer>
                             <TabsContainer
-                                onClick={(value: ThemeName | Theme) => uiStore.setTheme(value)}
-                                isSelected={(value: ThemeName | Theme) => {
+                                onClick={(value: ThemeName | 'automatic' | Theme) => uiStore.setTheme(value)}
+                                isSelected={(value: ThemeName | 'automatic' | Theme) => {
                                     if (typeof value === 'string') {
-                                        return uiStore.themeName === value
+                                        return uiStore.themeName === value;
                                     } else {
                                         return _.isEqual(value, uiStore.theme);
                                     }
                                 }}
                             >
+                                <Tab
+                                    icon={['fas', 'magic']}
+                                    value='automatic'
+                                >
+                                    Automatic
+                                </Tab>
                                 <Tab
                                     icon={['fas', 'sun']}
                                     value='light'
@@ -119,7 +126,7 @@ class SettingsPage extends React.Component<SettingsPageProps> {
                                 </Tab>
                                 <Tab
                                     icon={['fas', 'adjust']}
-                                    value={'high-contrast'}
+                                    value='high-contrast'
                                 >
                                     High Contrast
                                 </Tab>
@@ -138,10 +145,9 @@ class SettingsPage extends React.Component<SettingsPageProps> {
                             </ThemeColors>
 
                             <EditorContainer>
-                                <BaseEditor
+                                <ContainerSizedEditor
                                     contentId={null}
                                     language='html'
-                                    theme={uiStore.theme.monacoTheme}
                                     defaultValue={amIUsingHtml}
                                 />
                             </EditorContainer>
