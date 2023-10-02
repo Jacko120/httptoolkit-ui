@@ -122,12 +122,12 @@
 
                 if (error.isTimeout) {
                     errorElement.innerText = 'This is taking longer than normal...';
-                    errorDetailsElement.innerHTML = 'If this persists or happens often ' +
-                        'please <a href="https://github.com/httptoolkit/httptoolkit/issues/new">file an issue</a> ' + 'and help make HTTP Toolkit faster.';
+                    errorDetailsElement.innerHTML = 'Make sure that you have ' +
+                        '<a href="https://github.com/juby-httptoolkit/httptoolkit-server">httptoolkit-server</a> running on your device.';
                 } else {
                     errorElement.innerText = 'Startup failed: "' + error.message + '"';
                     errorDetailsElement.innerHTML = 'Please ' +
-                        '<a href="https://github.com/httptoolkit/httptoolkit/issues/new">file an issue</a>, ' +
+                        '<a href="https://github.com/juby-httptoolkit/httptoolkit/issues/new">file an issue</a>, ' +
                         "and we'll get this fixed ASAP";
                 }
             });
