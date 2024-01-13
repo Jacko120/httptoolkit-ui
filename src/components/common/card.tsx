@@ -54,11 +54,11 @@ const Card = styled.section.attrs((p: CardProps) => ({
         opacity: 0.5;
     `}
 
-    ${(p: CardProps) => !p.disabled && p.onClick && `
+    ${(p: CardProps) => !p.disabled && p.onClick && css`
         cursor: pointer;
 
         &:hover {
-            box-shadow: 0 2px 20px 0 rgba(0,0,0,0.3);
+            box-shadow: 0 2px 20px 0 rgba(0,0,0,${p => p.theme.boxShadowAlpha * 2});
         }
 
         &:active {
@@ -68,7 +68,7 @@ const Card = styled.section.attrs((p: CardProps) => ({
 
     background-color: ${p => p.theme.mainBackground};
     border-radius: 4px;
-    box-shadow: 0 2px 10px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 2px 10px 0 rgba(0,0,0,${p => p.theme.boxShadowAlpha});
 
     position: relative;
 
@@ -106,7 +106,7 @@ export const MediumCard = styled(Card)`
 
     > header, > h1 {
         text-transform: uppercase;
-        text-align: right;
+        text-align: ${p => p.headerAlignment};
         color: ${p => p.theme.containerWatermark};
 
         &:not(:last-child) {
@@ -269,26 +269,30 @@ const CollapsibleCardContainer = styled(MediumCard)<{
         }
     `}
 
-    ${p => p.expanded && css`
-        /* Override the Send container setting this to 'none', which hides non-expanded parts: */
-        display: flex !important;
+    ${p => p.expanded
+        ?  css`
+            /* Override the Send container setting this to 'none', which hides non-expanded parts: */
+            display: flex !important;
 
-        height: 100%;
-        width: 100%;
-        border-radius: 0;
-        margin: 0;
+            height: 100%;
+            width: 100%;
+            border-radius: 0;
+            margin: 0;
 
-        flex-shrink: 1;
-        min-height: 0;
+            flex-shrink: 1;
+            min-height: 0;
 
-        ${p.expanded === 'starting'
-            ? `
-                padding-top: 40px;
-                padding-bottom: 40px;
-            `
-            : 'transition: padding 0.1s;'
-        }
-    `}
+            ${p.expanded === 'starting'
+                ? `
+                    padding-top: 40px;
+                    padding-bottom: 40px;
+                `
+                : 'transition: padding 0.1s;'
+            }
+        `
+        // Show card direction markers only when not expanded
+        : cardDirectionCss(p.direction)
+    }
 
     &:focus {
         ${CollapseIcon} {
@@ -304,8 +308,6 @@ const CollapsibleCardContainer = styled(MediumCard)<{
         outline: none;
         border-color: ${p => p.theme.popColor};
     }
-
-    ${p => cardDirectionCss(p.direction)};
 `;
 
 export const CollapsibleCardHeading = styled((p: {

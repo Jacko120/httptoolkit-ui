@@ -90,6 +90,8 @@ const RowContainer = styled(LittleCard)<{
                 ${DragHandle} {
                     opacity: 0.5;
                 }
+
+                box-shadow: 0 2px 15px 0 rgba(0,0,0,${p => p.theme.boxShadowAlpha * 1.5});
             }
 
             ${p.deactivated && 'opacity: 0.6;'}
@@ -142,7 +144,7 @@ export const AddRuleRow = styled((p: {
     background-color: ${p =>
         polished.rgba(p.theme.mainBackground, 0.4)
     };
-    box-shadow: 0 0 4px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 0 4px 0 rgba(0,0,0,${p => p.theme.boxShadowAlpha});
 `;
 
 const MatcherOrHandler = styled.section`

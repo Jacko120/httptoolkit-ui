@@ -1,20 +1,19 @@
 import * as _ from 'lodash';
 import * as React from 'react';
-import { action, computed } from 'mobx';
-import { inject, observer } from 'mobx-react';
+import { action, flow, observable } from 'mobx';
+import { disposeOnUnmount, inject, observer } from 'mobx-react';
 import * as portals from 'react-reverse-portal';
-import { Method } from 'mockttp';
 
 import { RawHeaders } from '../../types';
 import { css, styled } from '../../styles';
-import { Icon } from '../../icons';
 
 import { RulesStore } from '../../model/rules/rules-store';
 import { UiStore } from '../../model/ui/ui-store';
 import { RequestInput } from '../../model/send/send-request-model';
+import { syncUrlToHeaders } from '../../model/http/editable-request-parts';
 
-import { Button, Select, TextInput } from '../common/inputs';
 import { ContainerSizedEditor } from '../editor/base-editor';
+import { SendRequestLine } from './send-request-line';
 import { SendRequestHeadersCard } from './send-request-headers-card';
 import { SendRequestBodyCard } from './send-request-body-card';
 
@@ -44,21 +43,6 @@ const RequestPaneContainer = styled.section<{
 // - When multiple areas are open, if there is spare space (e.g. few headers), the
 //   other areas that need it (body editor) expand and use the space.
 
-type MethodName = keyof typeof Method;
-const validMethods = Object.values(Method)
-    .filter(
-        value => typeof value === 'string'
-    ) as Array<MethodName>;
-
-const MethodSelect = styled(Select)`
-    font-size: ${p => p.theme.textSize};
-    display: inline-block;
-    width: auto;
-`;
-
-const UrlInput = styled(TextInput)`
-`;
-
 @inject('rulesStore')
 @inject('uiStore')
 @observer
@@ -76,30 +60,25 @@ export class RequestPane extends React.Component<{
         return this.props.uiStore!.sendCardProps;
     }
 
+    componentDidMount() {
+        disposeOnUnmount(this, syncUrlToHeaders(
+            () => this.props.requestInput.url,
+            () => this.props.requestInput.headers
+        ));
+    }
+
     render() {
         const { requestInput, editorNode, uiStore } = this.props;
 
         return <RequestPaneContainer hasExpandedChild={!!uiStore?.expandedSendRequestCard}>
-            <MethodSelect value={requestInput.method} onChange={this.updateMethod}>
-                { validMethods.map((methodOption) =>
-                    <option
-                        key={methodOption}
-                        value={methodOption}
-                    >
-                        { methodOption }
-                    </option>
-                ) }
-            </MethodSelect>
-            <UrlInput
-                placeholder='https://example.com/hello?name=world'
-                value={requestInput.url}
-                onChange={this.updateUrl}
+            <SendRequestLine
+                method={requestInput.method}
+                updateMethod={this.updateMethod}
+                url={requestInput.url}
+                updateUrl={this.updateUrl}
+                isSending={this.isSending}
+                sendRequest={this.sendRequest}
             />
-            <Button
-                onClick={this.sendRequest}
-            >
-                Send <Icon icon={['far', 'paper-plane']} />
-            </Button>
             <SendRequestHeadersCard
                 {...this.cardProps.requestHeaders}
                 headers={requestInput.headers}
@@ -107,7 +86,7 @@ export class RequestPane extends React.Component<{
             />
             <SendRequestBodyCard
                 {...this.cardProps.requestBody}
-                body={requestInput.rawBody}
+                body={requestInput.rawBody.decoded}
                 onBodyUpdated={this.updateBody}
                 editorNode={editorNode}
             />
@@ -115,15 +94,13 @@ export class RequestPane extends React.Component<{
     }
 
     @action.bound
-    updateMethod(event: React.ChangeEvent<HTMLSelectElement>) {
-        const { requestInput } = this.props;
-        requestInput.method = event.target.value;
+    updateMethod(method: string) {
+        this.props.requestInput.method = method;
     }
 
     @action.bound
-    updateUrl(changeEvent: React.ChangeEvent<HTMLInputElement>) {
-        const { requestInput } = this.props;
-        requestInput.url = changeEvent.target.value;
+    updateUrl(url: string) {
+        this.props.requestInput.url = url;
     }
 
     @action.bound
@@ -135,12 +112,24 @@ export class RequestPane extends React.Component<{
     @action.bound
     updateBody(input: Buffer) {
         const { requestInput } = this.props;
-        requestInput.rawBody = input;
+        requestInput.rawBody.updateDecodedBody(input);
     }
 
-    @action.bound
-    async sendRequest() {
-        this.props.sendRequest(this.props.requestInput);
-    }
+    @observable
+    private isSending = false;
+
+    sendRequest = flow(function * (this: RequestPane) {
+        if (this.isSending) return;
+
+        this.isSending = true;
+
+        try {
+            yield this.props.sendRequest(this.props.requestInput);
+        } catch (e) {
+            console.warn('Sending request failed', e);
+        } finally {
+            this.isSending = false;
+        }
+    }).bind(this);
 
 }

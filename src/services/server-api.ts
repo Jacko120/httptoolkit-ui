@@ -1,56 +1,80 @@
 import * as localForage from 'localforage';
 
 import { RUNNING_IN_WORKER } from '../util';
-import { getDeferred } from '../util/promise';
+import { delay, getDeferred } from '../util/promise';
 import {
     versionSatisfies,
     SERVER_REST_API_SUPPORTED
 } from './service-versions';
 
 import { type ServerConfig, type NetworkInterfaces, type ServerInterceptor, ApiError } from './server-api-types';
-export { ServerConfig, NetworkInterfaces, ServerInterceptor };
+export type { ServerConfig, NetworkInterfaces, ServerInterceptor };
 
 import { GraphQLApiClient } from './server-graphql-api';
 import { RestApiClient } from './server-rest-api';
 import { RequestDefinition, RequestOptions } from '../model/send/send-request-model';
 
-const authTokenPromise = !RUNNING_IN_WORKER
-    // Main UI gets given the auth token directly in its URL:
-    ? Promise.resolve(new URLSearchParams(window.location.search).get('authToken') ?? undefined)
-    // For workers, the new (March 2020) UI shares the auth token with SW via IDB:
-    : localForage.getItem<string>('latest-auth-token')
-        .then((authToken) => {
-            if (authToken) return authToken;
+async function getAuthToken() {
+    if (!RUNNING_IN_WORKER) {
+        return Promise.resolve(
+            new URLSearchParams(window.location.search).get('authToken') ?? undefined
+        );
+    }
 
-            // Old UI (Jan-March 2020) shares auth token via SW query param:
-            const workerParams = new URLSearchParams(
-                (self as unknown as WorkerGlobalScope).location.search
-            );
-            return workerParams.get('authToken') ?? undefined;
-
-            // Pre-Jan 2020 UI doesn't share auth token - ok with old desktop, fails with 0.1.18+.
-        });
+    // For workers, the UI shares the auth token with SW via IDB:
+    const authToken = await localForage.getItem<string>('latest-auth-token')
+    if (authToken) return authToken;
+}
 
 const serverReady = getDeferred();
 export const announceServerReady = () => serverReady.resolve();
 export const waitUntilServerReady = () => serverReady.promise;
 
-// We initially default to the GQL API. If at the first version lookup we discover that the REST
-// API is supported, this is swapped out for the REST client instead. Both work, but REST is the
-// goal long-term so should be preferred where available.
-let apiClient: Promise<GraphQLApiClient | RestApiClient> = authTokenPromise
-    .then((authToken) => new GraphQLApiClient(authToken));
-export async function getServerVersion(): Promise<string> {
-    const client = await apiClient;
-    const version = await client.getServerVersion();
+const apiClient = (async (): Promise<GraphQLApiClient | RestApiClient> => {
+    // Delay checking, just to avoid spamming requests that we know won't work. Doesn't work in
+    // the update SW, which doesn't get a server-ready ping, so just wait a bit:
+    if (!RUNNING_IN_WORKER) await waitUntilServerReady();
+    else await delay(5000);
 
-    // Swap to the REST client if we receive a version where it's supported:
-    if (versionSatisfies(version, SERVER_REST_API_SUPPORTED) && client instanceof GraphQLApiClient) {
-        apiClient = authTokenPromise
-            .then((authToken) => new RestApiClient(authToken));
+    // To work out which API is supported, we loop trying to get the version from
+    // each one (may take a couple of tries as the server starts up), and then
+    // check the resulting version to see what's supported.
+
+    let version: string | undefined;
+    while (!version) {
+        // Reload auth token each time. For main UI it'll never change (but load is instant),
+        // while for SW there's a race so we need to reload just in case:
+        const authToken = await getAuthToken();
+
+        const restClient = new RestApiClient(authToken);
+        const graphQLClient = new GraphQLApiClient(authToken);
+
+        version = await restClient.getServerVersion().catch(() => {
+            console.log("Couldn't get version from REST API");
+
+            return graphQLClient.getServerVersion().catch(() => {
+                console.log("Couldn't get version from GraphQL API");
+                return undefined;
+            });
+        });
+
+        if (version) {
+            if (versionSatisfies(version, SERVER_REST_API_SUPPORTED)) {
+                return restClient;
+            } else {
+                return graphQLClient;
+            }
+        } else {
+            // Wait a little then try again:
+            await delay(100);
+        }
     }
 
-    return version;
+    throw new Error(`Unreachable error: got version ${version} but couldn't pick an API client`);
+})();
+
+export async function getServerVersion(): Promise<string> {
+    return (await apiClient).getServerVersion();
 }
 
 export async function getConfig(proxyPort: number): Promise<ServerConfig> {
